@@ -18,6 +18,7 @@ access_key_id = $R2_ACCESS_KEY_ID
 secret_access_key = $R2_SECRET_ACCESS_KEY
 endpoint = $R2_ENDPOINT
 acl = private
+no_check_bucket = true
 EOF
 
 rclone copyto "$ARCHIVE" remote:"$R2_BUCKET"/"$R2_PATH"/"$ARCHIVE"
