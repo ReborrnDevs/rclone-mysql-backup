@@ -40,10 +40,14 @@ Then, in settings, set restart to never and input a cron schedule to backup as o
 
 ## Restoring from a backup
 
+Each run uploads a single archive named `backup-<UTC timestamp>.tar` (e.g. `backup-20260519T000000Z.tar`) to `$R2_BUCKET/$R2_PATH/`. To restore a specific point in time:
+
 1. Install [mydumper] and [rclone]
 2. Create the same [rclone config file] that this container does
-3. Run `rclone copy remote:$R2_BUCKET/$R2_PATH ./$LOCAL_FOLDER_TO_CREATE`
-4. Run `myloader -h $MYSQL_HOST -u $MYSQL_USER -p $MYSQL_PASSWORD -d $LOCAL_FOLDER_TO_CREATE`
+3. List available backups: `rclone lsf remote:$R2_BUCKET/$R2_PATH/`
+4. Download the one you want: `rclone copy remote:$R2_BUCKET/$R2_PATH/backup-<timestamp>.tar .`
+5. Extract it: `tar -xf backup-<timestamp>.tar` (produces a `backup/` directory)
+6. Run `myloader -h $MYSQL_HOST -u $MYSQL_USER -p $MYSQL_PASSWORD -d backup`
 
 ## FAQ
 
