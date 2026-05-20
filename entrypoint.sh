@@ -2,13 +2,25 @@
 
 set -euo pipefail
 
+log() { printf '[%s] %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$*"; }
+
 TIMESTAMP="$(date -u +%Y%m%dT%H%M%SZ)"
 ARCHIVE="backup-${TIMESTAMP}.tar"
+DEST="remote:${R2_BUCKET}/${R2_PATH}/${ARCHIVE}"
 
-mydumper --host "$MYSQL_HOST" --user "$MYSQL_USER" --password "$MYSQL_PASSWORD" --port "$MYSQL_PORT" --database "$MYSQL_DATABASE" -C -c --clear -o backup
+log "starting backup run ${TIMESTAMP}"
+log "target: ${MYSQL_USER}@${MYSQL_HOST}:${MYSQL_PORT}/${MYSQL_DATABASE}"
+log "destination: ${DEST}"
 
+log "dumping database with mydumper"
+mydumper --host "$MYSQL_HOST" --user "$MYSQL_USER" --password "$MYSQL_PASSWORD" --port "$MYSQL_PORT" --database "$MYSQL_DATABASE" -C -c --clear -o backup -v 3
+log "dump complete; size: $(du -sh backup | cut -f1)"
+
+log "creating archive ${ARCHIVE}"
 tar -cf "$ARCHIVE" backup/
+log "archive size: $(du -h "$ARCHIVE" | cut -f1)"
 
+log "writing rclone config"
 rclone config touch
 cat <<EOF > ~/.config/rclone/rclone.conf
 [remote]
@@ -21,4 +33,6 @@ acl = private
 no_check_bucket = true
 EOF
 
-rclone copyto "$ARCHIVE" remote:"$R2_BUCKET"/"$R2_PATH"/"$ARCHIVE"
+log "uploading to ${DEST}"
+rclone copyto "$ARCHIVE" "$DEST" -v --stats 10s --stats-one-line
+log "backup run ${TIMESTAMP} complete"
