@@ -13,12 +13,14 @@ log "target: ${MYSQL_USER}@${MYSQL_HOST}:${MYSQL_PORT}/${MYSQL_DATABASE}"
 log "destination: ${DEST}"
 
 log "dumping database with mydumper"
+t0=$SECONDS
 mydumper --host "$MYSQL_HOST" --user "$MYSQL_USER" --password "$MYSQL_PASSWORD" --port "$MYSQL_PORT" --database "$MYSQL_DATABASE" -C -c --clear -o backup -v 3
-log "dump complete; size: $(du -sh backup | cut -f1)"
+log "dump complete in $((SECONDS - t0))s; size: $(du -sh backup | cut -f1)"
 
 log "creating archive ${ARCHIVE}"
+t0=$SECONDS
 tar -cf "$ARCHIVE" backup/
-log "archive size: $(du -h "$ARCHIVE" | cut -f1)"
+log "archive created in $((SECONDS - t0))s; size: $(du -h "$ARCHIVE" | cut -f1)"
 
 log "writing rclone config"
 rclone config touch
@@ -34,5 +36,8 @@ no_check_bucket = true
 EOF
 
 log "uploading to ${DEST}"
+t0=$SECONDS
 rclone copyto "$ARCHIVE" "$DEST" -v --stats 10s --stats-one-line
+log "upload complete in $((SECONDS - t0))s"
 log "backup run ${TIMESTAMP} complete"
+exit 0
